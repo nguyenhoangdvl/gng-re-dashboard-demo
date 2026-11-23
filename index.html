@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quỹ giếng demo | GnG + RE</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #edf3f2; color: #132e34; font: 15px/1.55 "Segoe UI", system-ui, sans-serif; }
+  header { background: #122f34; color: #fff; padding: 32px max(24px, calc((100% - 1160px) / 2)); }
+  header p { color: #abcfcc; margin: 4px 0; }
+  h1 { margin: 2px 0; font-size: clamp(30px, 5vw, 46px); line-height: 1.15; }
+  h2 { margin: 0 0 12px; font-size: 20px; }
+  main { max-width: 1210px; margin: auto; padding: 24px; }
+  section { background: #fff; border: 1px solid #cddcda; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .filters { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; }
+  .filters label { flex: 1 1 170px; font-weight: 600; }
+  select, input { display: block; width: 100%; min-height: 42px; margin-top: 5px; padding: 8px; border: 1px solid #8aaba8; border-radius: 6px; background: white; color: inherit; font: inherit; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .card { color: inherit; background: #fff; border: 1px solid #cddcda; border-top: 4px solid var(--accent); border-radius: 9px; padding: 12px; text-align: left; font: inherit; cursor: pointer; }
+  .card[aria-pressed="true"] { outline: 2px solid #122f34; outline-offset: 2px; }
+  .card strong { display: block; font-size: 29px; line-height: 1.2; }
+  .bar-row { display: grid; grid-template-columns: minmax(100px, 165px) 1fr 75px; align-items: center; gap: 10px; margin: 8px 0; }
+  .track { background: #e8eeed; height: 12px; border-radius: 6px; overflow: hidden; }
+  .bar { height: 100%; background: var(--accent); }
+  .metric { text-align: right; font-variant-numeric: tabular-nums; }
+  .scroll { overflow: auto; max-height: 450px; }
+  table { border-collapse: collapse; width: 100%; text-align: left; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid #dce6e4; white-space: nowrap; }
+  th { position: sticky; top: 0; background: #e4efed; }
+  td.num, th.num { text-align: right; }
+  summary { cursor: pointer; font-weight: 650; }
+  .meta { color: #405f62; margin: 0 0 12px; }
+</style>
+</head>
+<body>
+<header>
+  <p>GnG + RE · Dữ liệu giả lập</p>
+  <h1>Hiện trạng quỹ giếng</h1>
+  <p id="period"></p>
+</header>
+<main>
+  <section class="filters" aria-label="Bộ lọc">
+    <label>Mỏ<select id="field"></select></label>
+    <label>Giàn<select id="platform"></select></label>
+    <label>Mã giếng<input id="search" type="search" placeholder="Tìm mã giếng"></label>
+  </section>
+  <div class="cards" id="cards" aria-label="Lọc danh sách theo nhóm giếng"></div>
+  <section>
+    <h2>Số giếng theo nhóm</h2>
+    <p class="meta" id="total" aria-live="polite"></p>
+    <div id="chart"></div>
+  </section>
+  <section>
+    <h2>Thống kê theo giàn</h2>
+    <div class="scroll"><table id="platform-table"></table></div>
+  </section>
+  <section>
+    <h2>Danh sách giếng</h2>
+    <p class="meta" id="detail-total" aria-live="polite"></p>
+    <div class="scroll"><table id="details"></table></div>
+  </section>
+  <section>
+    <details>
+      <summary>Quy tắc phân nhóm theo mã demo</summary>
+      <p>Đang làm việc dùng mã trạng thái 1. Phương pháp 2 là tự phun, 1 là gaslift, 3 là ESP và 4 là bơm ép. Dừng giếng dùng trạng thái 2. Hủy giếng dùng trạng thái 8 hoặc 9. Nhóm Khác giữ các mã còn lại, gồm không hoạt động và bảo quản.</p>
+      <p>Mỗi giếng được đếm theo ngày, mỏ, giàn và mã giếng. Bảng chi tiết hiển thị nhãn minh họa.</p>
+    </details>
+  </section>
+</main>
+<script id="well-data" type="application/json">[{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W001","status":"1. Active","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W002","status":"1. Active","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W003","status":"1. Active","method":"4. Injection"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W004","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W005","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W006","status":"2. Stopped","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W007","status":"8. Abandoned","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W008","status":"6. Preserved","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W009","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W010","status":"1. Active","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W011","status":"1. Active","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-01","well":"DEMO-W012","status":"1. Active","method":"4. Injection"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W013","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W014","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W015","status":"2. Stopped","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W016","status":"8. Abandoned","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W017","status":"6. Preserved","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W018","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W019","status":"1. Active","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W020","status":"1. Active","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W021","status":"1. Active","method":"4. Injection"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W022","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W023","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-02","well":"DEMO-W024","status":"2. Stopped","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W025","status":"8. Abandoned","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W026","status":"6. Preserved","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W027","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W028","status":"1. Active","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W029","status":"1. Active","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W030","status":"1. Active","method":"4. Injection"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W031","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W032","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W033","status":"2. Stopped","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W034","status":"8. Abandoned","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W035","status":"6. Preserved","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 1","platform":"DEMO-03","well":"DEMO-W036","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W037","status":"1. Active","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W038","status":"1. Active","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W039","status":"1. Active","method":"4. Injection"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W040","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W041","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W042","status":"2. Stopped","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W043","status":"8. Abandoned","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W044","status":"6. Preserved","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W045","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W046","status":"1. Active","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W047","status":"1. Active","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-04","well":"DEMO-W048","status":"1. Active","method":"4. Injection"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W049","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W050","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W051","status":"2. Stopped","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W052","status":"8. Abandoned","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W053","status":"6. Preserved","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W054","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W055","status":"1. Active","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W056","status":"1. Active","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W057","status":"1. Active","method":"4. Injection"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W058","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W059","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-05","well":"DEMO-W060","status":"2. Stopped","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W061","status":"8. Abandoned","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W062","status":"6. Preserved","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W063","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W064","status":"1. Active","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W065","status":"1. Active","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W066","status":"1. Active","method":"4. Injection"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W067","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W068","status":"1. Active","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W069","status":"2. Stopped","method":"1. Gaslift"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W070","status":"8. Abandoned","method":"2. Natural flow"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W071","status":"6. Preserved","method":"3. ESP"},{"date":"01/01/2026","field":"Demo 2","platform":"DEMO-06","well":"DEMO-W072","status":"1. Active","method":"1. Gaslift"}]</script>
+<script>
+  const groups = [
+    { id: 'natural', label: 'Tự phun', color: '#117268' },
+    { id: 'gaslift', label: 'Gaslift', color: '#2356a1' },
+    { id: 'esp', label: 'ESP', color: '#6936a1' },
+    { id: 'injection', label: 'Bơm ép', color: '#0d718b' },
+    { id: 'stopped', label: 'Dừng giếng', color: '#a45515' },
+    { id: 'abandoned', label: 'Hủy giếng', color: '#a53240' },
+    { id: 'other', label: 'Khác', color: '#596970' },
+  ];
+  const activeMethods = { '1': 'gaslift', '2': 'natural', '3': 'esp', '4': 'injection' };
+  const code = label => /^\s*(\d+)\s*\./.exec(label || '')?.[1];
+  function classify(record) {
+    const status = code(record.status);
+    if (status === '2') return 'stopped';
+    if (status === '8' || status === '9') return 'abandoned';
+    if (status === '1') return activeMethods[code(record.method)] || 'other';
+    return 'other';
+  }
+  const records = JSON.parse(document.getElementById('well-data').textContent);
+  const wells = new Map();
+  for (const record of records) {
+    const key = JSON.stringify([record.date, record.field, record.platform, record.well]);
+    const group = classify(record);
+    const previous = wells.get(key);
+    if (!previous) wells.set(key, { ...record, group });
+    else if (previous.group !== group) wells.set(key, { ...previous, group: 'other' });
+  }
+  const rows = [...wells.values()];
+  const nf = new Intl.NumberFormat('vi-VN');
+  const percent = new Intl.NumberFormat('vi-VN', { style: 'percent', maximumFractionDigits: 1 });
+  const byId = id => document.getElementById(id);
+  function node(tag, value, className) {
+    const item = document.createElement(tag);
+    if (value !== undefined) item.textContent = value;
+    if (className) item.className = className;
+    return item;
+  }
+  function count(records) {
+    const totals = Object.fromEntries(groups.map(group => [group.id, 0]));
+    for (const record of records) totals[record.group]++;
+    return totals;
+  }
+  function setOptions(select, values, all) {
+    const current = select.value;
+    const options = [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
+    select.replaceChildren(new Option(all, ''), ...options.map(value => new Option(value, value)));
+    select.value = options.includes(current) ? current : '';
+  }
+  function table(target, columns, values, numericFrom = Infinity) {
+    const head = node('thead');
+    const headings = node('tr');
+    columns.forEach((label, index) => {
+      const cell = node('th', label, index >= numericFrom ? 'num' : undefined);
+      cell.scope = 'col';
+      headings.append(cell);
+    });
+    head.append(headings);
+    const body = node('tbody');
+    for (const valuesRow of values) {
+      const row = node('tr');
+      valuesRow.forEach((value, index) => row.append(node('td', value, index >= numericFrom ? 'num' : undefined)));
+      body.append(row);
+    }
+    target.replaceChildren(head, body);
+  }
+  let selectedGroup = '';
+  const dates = [...new Set(rows.map(row => row.date).filter(Boolean))];
+  byId('period').textContent = 'Ngày báo cáo ' + dates.join(', ');
+  setOptions(byId('field'), rows.map(row => row.field), 'Tất cả mỏ');
+
+  function render() {
+    const field = byId('field').value;
+    const fieldRows = rows.filter(row => !field || row.field === field);
+    setOptions(byId('platform'), fieldRows.map(row => row.platform), 'Tất cả giàn');
+    const platform = byId('platform').value;
+    const search = byId('search').value.trim().toLocaleLowerCase();
+    const shown = fieldRows.filter(row => (!platform || row.platform === platform) &&
+      (!search || row.well.toLocaleLowerCase().includes(search)));
+    const totals = count(shown);
+    byId('total').textContent = nf.format(shown.length) + ' giếng trong phạm vi đang xem';
+
+    const cards = [];
+    const bars = [];
+    for (const group of groups) {
+      const total = totals[group.id];
+      const ratio = shown.length ? total / shown.length : 0;
+      const card = node('button', undefined, 'card');
+      card.type = 'button';
+      card.style.setProperty('--accent', group.color);
+      card.setAttribute('aria-pressed', String(group.id === selectedGroup));
+      card.append(node('span', group.label), node('strong', nf.format(total)));
+      card.onclick = () => {
+        selectedGroup = selectedGroup === group.id ? '' : group.id;
+        render();
+        byId('cards').children[groups.indexOf(group)].focus();
+      };
+      cards.push(card);
+      const barRow = node('div', undefined, 'bar-row');
+      const track = node('div', undefined, 'track');
+      track.setAttribute('aria-hidden', 'true');
+      const bar = node('div', undefined, 'bar');
+      bar.style.setProperty('--accent', group.color);
+      bar.style.width = (100 * ratio) + '%';
+      track.append(bar);
+      barRow.append(node('span', group.label), track, node('span', percent.format(ratio), 'metric'));
+      bars.push(barRow);
+    }
+    byId('cards').replaceChildren(...cards);
+    byId('chart').replaceChildren(...bars);
+
+    const platforms = new Map();
+    for (const record of shown) {
+      const key = JSON.stringify([record.field, record.platform]);
+      if (!platforms.has(key)) platforms.set(key, []);
+      platforms.get(key).push(record);
+    }
+    const platformSummary = [...platforms.values()].sort((a, b) => b.length - a.length).map(list => {
+      const totals = count(list);
+      return [list[0].field, list[0].platform, list.length, ...groups.map(group => totals[group.id])];
+    });
+    table(byId('platform-table'), ['Mỏ', 'Giàn', 'Tổng', ...groups.map(group => group.label)], platformSummary, 2);
+    const details = shown.filter(row => !selectedGroup || row.group === selectedGroup);
+    const selectedLabel = groups.find(group => group.id === selectedGroup)?.label;
+    byId('detail-total').textContent = nf.format(details.length) + ' giếng' +
+      (selectedLabel ? ' · ' + selectedLabel : ' · Chọn một ô thống kê để xem riêng nhóm đó');
+    table(byId('details'), ['Mỏ', 'Giàn', 'Mã giếng', 'Nhóm', 'Trạng thái demo', 'Phương pháp demo'],
+      details.map(row => [row.field, row.platform, row.well, groups.find(group => group.id === row.group).label, row.status, row.method]));
+  }
+  for (const id of ['field', 'platform', 'search']) byId(id).addEventListener('input', render);
+  render();
+</script>
+</body>
+</html>
